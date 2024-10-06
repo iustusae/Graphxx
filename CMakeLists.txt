@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
+project(fncxx)
+
+# Enable export of compile commands for better tooling support
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find required packages
+find_package(fmt CONFIG REQUIRED)
+find_package(
+  SFML
+  COMPONENTS system window graphics
+  REQUIRED)
+
+# Locate the termcolor header
+find_path(TERMCOLOR_INCLUDE_DIRS "termcolor/termcolor.hpp")
+
+# Create shared library for the function parser
+add_library(fnparser SHARED functionParser/FunctionParser.hpp
+                            functionParser/Types.hpp)
+
+# Specify properties for the fnparser target
+set_target_properties(fnparser PROPERTIES LINKER_LANGUAGE CXX)
+
+# Include directories for fnparser
+target_include_directories(fnparser PRIVATE ${TERMCOLOR_INCLUDE_DIRS})
+target_include_directories(fnparser
+                           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/functionParser)
+
+# Create the main executable
+add_executable(fncxx src/main.cc
+        src/main.cc)
+
+# Link libraries to the fncxx executable
+target_link_libraries(fncxx PRIVATE fmt::fmt sfml-system sfml-window
+                                    sfml-graphics fnparser)
