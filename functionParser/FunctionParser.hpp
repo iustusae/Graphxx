@@ -149,61 +149,40 @@ class FunctionParser {
       std::cout << "number found: " << ss.str() << "\n";
     }
   }
-
-  double evaluate() {
-    double lhs{NAN}, rhs{NAN};
-    Operators ch = Operators::None;
+  bool isOperator(const char &c) const noexcept {
+    return (std::find(std::cbegin(ops), std::cend(ops), c) != std::cend(ops));
+  }
+  std::string shuntingYardAlgorithm() {
+    std::vector<std::string> output{};
+    std::stack<char> operator_stack{};
     std::ostringstream oss{};
+    char curr = 0;
+    Operators prev = Operators::None;
 
-    for (const char &c : m_function) {
-      if (isdigit(c) || c == '.') {
-        oss << c;
-      } else {
-        if (!oss.str().empty()) {
-          if (std::isnan(lhs)) {
-            lhs = std::stod(oss.str());
-          } else {
-            rhs = std::stod(oss.str());
+    for (int i = 0; i < m_function.length(); ++i) {
+      curr = m_function[i];
+      if (isdigit(curr) || curr == '.') {
+        oss << curr;
+      } else if (isOperator(curr)) {
+        if (oss.rdbuf()->in_avail() != 0) {
+          double res = std::stod(oss.str());
+          if (std::isnan(res))
+            throw std::runtime_error(
+                fmt::format("invalid number {}", oss.str()));
+          else {
+            output.push_back(oss.str());
+            oss.clear();
           }
-          oss.str("");  // Clear the string stream
-          oss.clear();  // Clear any error flags
-        }
-
-        switch (c) {
-          case Add:
-            ch = Operators::Add;
-            break;
-          case Sub:
-            ch = Operators::Sub;
-            break;
-          case Mult:
-            ch = Operators::Mult;
-            break;
-          case Div:
-            ch = Operators::Div;
-            break;
-          case Pow:
-            ch = Operators::Pow;
-            break;
+        } else {
+          if (operator_stack.empty()) {
+            operator_stack.push(curr);
+          } else {
+            if (curr == Operators::Mult or curr == Operators::Div) {
+            }
+          }
         }
       }
     }
-
-    // Process the last number
-    if (!oss.str().empty()) {
-      if (std::isnan(lhs)) {
-        lhs = std::stod(oss.str());
-      } else {
-        rhs = std::stod(oss.str());
-      }
-    }
-
-    // Check if we have valid lhs and rhs to perform the operation
-    if (std::isnan(lhs) || std::isnan(rhs) || ch == Operators::None) {
-      throw std::runtime_error("Invalid expression");
-    }
-
-    return token_to_bin_op.at(ch)(lhs, rhs);
   }
 };
 
