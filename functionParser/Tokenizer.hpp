@@ -247,17 +247,17 @@ inline Associativity getAssociativity(const Operator& op) {
  * @brief Shunting yard algo to transform a classic math expression into RPN. Taken from https://en.wikipedia.org/wiki/Shunting_yard_algorithm
  * @anchor https://en.wikipedia.org/wiki/Shunting_yard_algorithm
  */
-inline std::string shunting_yard(const std::string& expression) {
+inline std::vector<TokenType> shunting_yard(const std::string& expression) {
   using namespace Logger;
   using Logger::LogLevel;
 
   std::vector<TokenType> tokens = tokenize(expression);
-  std::queue<TokenType> output_queue{};
+  std::vector<TokenType> output_queue{};
   std::stack<Operator> op_stack{};
   std::ostringstream oss{};
   for (const auto& token : tokens) {
     if (isNumber(token)) {
-      output_queue.push(token);
+      output_queue.emplace_back(token);
       oss << std::get<double>(token);
     } else if (isOperator(token)) {
       auto op = std::get<Operator>(token);
@@ -271,7 +271,7 @@ inline std::string shunting_yard(const std::string& expression) {
               ((getOperatorPrecedence(op_stack.top()) ==
                 getOperatorPrecedence(o1)) and
                getAssociativity(o1) == Associativity::Left))) {
-        output_queue.push(op_stack.top());
+        output_queue.emplace_back(op_stack.top());
         oss << static_cast<char>(op_stack.top());
         op_stack.pop();
       }
@@ -283,7 +283,7 @@ inline std::string shunting_yard(const std::string& expression) {
           continue;
         } else if (op == Operator::RParen) {
             while(not op_stack.empty() and op_stack.top() != Operator::LParen) {
-        output_queue.push(op_stack.top());
+        output_queue.emplace_back(op_stack.top());
         oss << static_cast<char>(op_stack.top());
         op_stack.pop();
 
@@ -299,11 +299,10 @@ inline std::string shunting_yard(const std::string& expression) {
 
     while(not op_stack.empty()) {
 
-        output_queue.push(op_stack.top());
+        output_queue.emplace_back(op_stack.top());
         oss << op_stack.top();
         op_stack.pop();
     }
-
-  return queueToString(output_queue);
+  return output_queue;
 };  // namespace Tokenizer
 }  // namespace Tokenizer

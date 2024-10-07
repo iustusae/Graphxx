@@ -17,5 +17,4 @@ int main() {
   //   delete add.left;
   //   delete add.right;
   // Tokenizer::tokenize("0.23 + 25889.333");
-  std::cout << Tokenizer::shunting_yard("4 + 4 * 2 / (1 - 5)");
 }
