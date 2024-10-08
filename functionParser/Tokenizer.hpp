@@ -1,7 +1,7 @@
 #pragma once
+#include "Logger.hpp"
 #include <fmt/core.h>
 
-#include "Logger.hpp"
 #include <cassert>
 #include <cctype>
 #include <cmath>
@@ -11,7 +11,6 @@
 #include <sstream>
 #include <stack>
 #include <string_view>
-#include <termcolor/termcolor.hpp>
 #include <variant>
 #include <vector>
 
@@ -257,7 +256,7 @@ int getOperatorPrecedence(const Operator &op);
 Associativity getAssociativity(const Operator &op);
 
 /**
- * @brief Tokenizes the given mathematical expression.
+ * @brief Tokenize the given mathematical expression.
  * @param expression The expression to tokenize.
  * @return A vector of TokenType representing the tokenized expression.
  */
@@ -287,6 +286,71 @@ std::vector<TokenType> shunting_yard(const std::string &expression);
  * @param expression The expression to evaluate.
  * @return The result of the evaluation as a double.
  */
-double evaluate(const std::string &expression);
 
+template <class Output> Output evaluate(const std::string &expression) {
+
+  static_assert(std::is_arithmetic<Output>::value, "Output must be arithmetic");
+
+  auto vec = shunting_yard(expression);
+  std::stack<double> accumulator{};
+
+  for (const auto &tok : vec) {
+    if (isNumber(tok)) {
+      accumulator.emplace(std::get<double>(tok));
+    } else if (isOperator(tok)) {
+      auto op = std::get<Operator>(tok);
+
+      double lhs{}, rhs{};
+      switch (op) {
+      case Operator::Sum:
+        lhs = {accumulator.top()};
+        accumulator.pop();
+        rhs = {accumulator.top()};
+        accumulator.pop();
+        Logger::log(
+            fmt::format("Performing operation {} on {} and {}", '+', lhs, rhs));
+        accumulator.emplace(rhs + lhs);
+        break;
+      case Operator::Sub:
+        lhs = {accumulator.top()};
+        accumulator.pop();
+        rhs = {accumulator.top()};
+        accumulator.pop();
+        Logger::log(
+            fmt::format("Performing operation {} on {} and {}", '-', lhs, rhs));
+        accumulator.emplace(rhs - lhs);
+        break;
+      case Operator::Div:
+        lhs = {accumulator.top()};
+        accumulator.pop();
+        rhs = {accumulator.top()};
+        accumulator.pop();
+        Logger::log(
+            fmt::format("Performing operation {} on {} and {}", '/', lhs, rhs));
+        assert(rhs != 0);
+        accumulator.emplace(rhs / lhs);
+        break;
+      case Operator::Mult:
+        lhs = {accumulator.top()};
+        accumulator.pop();
+        rhs = {accumulator.top()};
+        accumulator.pop();
+        Logger::log(
+            fmt::format("Performing operation {} on {} and {}", '*', lhs, rhs));
+        accumulator.emplace(rhs * lhs);
+        break;
+      case Operator::Pow:
+        lhs = {accumulator.top()};
+        accumulator.pop();
+        rhs = {accumulator.top()};
+        accumulator.pop();
+        accumulator.emplace(op_to_fn.at(Operator::Pow).fn(rhs, lhs));
+        break;
+      default:
+        return 0;
+      }
+    }
+  }
+  return static_cast<Output>(accumulator.top());
+}
 } // namespace Tokenizer

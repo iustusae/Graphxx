@@ -1,4 +1,7 @@
 #include "Tokenizer.hpp"
+#include "Logger.hpp"
+#include <regex>
+#include <type_traits>
 
 bool Tokenizer::isOperator(const Tokenizer::Operator c) {
   using namespace Tokenizer;
@@ -137,7 +140,7 @@ auto Tokenizer::tokenize(const std::string_view expression)
   return vec;
 }
 
-inline std::vector<Tokenizer::TokenType>
+std::vector<Tokenizer::TokenType>
 Tokenizer::shunting_yard(const std::string &expression) {
   using namespace Logger;
   using Logger::LogLevel;
@@ -193,61 +196,6 @@ Tokenizer::shunting_yard(const std::string &expression) {
     oss << op_stack.top();
     op_stack.pop();
   }
+  Logger::log(fmt::format("Output Queue: {}", oss.str()), LogLevel::kInfo);
   return output_queue;
-}
-
-double Tokenizer::evaluate(const std::string &expression) {
-  auto vec = shunting_yard(expression);
-  std::stack<double> accumulator{};
-
-  for (const auto &tok : vec) {
-    if (isNumber(tok)) {
-      accumulator.emplace(std::get<double>(tok));
-    } else if (isOperator(tok)) {
-      auto op = std::get<Operator>(tok);
-
-      double lhs{}, rhs{};
-      switch (op) {
-      case Operator::Sum:
-        lhs = {accumulator.top()};
-        accumulator.pop();
-        rhs = {accumulator.top()};
-        accumulator.pop();
-        accumulator.emplace(lhs + rhs);
-        break;
-      case Operator::Sub:
-        lhs = {accumulator.top()};
-        accumulator.pop();
-        rhs = {accumulator.top()};
-        accumulator.pop();
-        accumulator.emplace(lhs - rhs);
-        break;
-      case Operator::Div:
-        lhs = {accumulator.top()};
-        accumulator.pop();
-        rhs = {accumulator.top()};
-        accumulator.pop();
-        assert(rhs != 0);
-        accumulator.emplace(lhs / rhs);
-        break;
-      case Operator::Mult:
-        lhs = {accumulator.top()};
-        accumulator.pop();
-        rhs = {accumulator.top()};
-        accumulator.pop();
-        accumulator.emplace(lhs * rhs);
-        break;
-      case Operator::Pow:
-        lhs = {accumulator.top()};
-        accumulator.pop();
-        rhs = {accumulator.top()};
-        accumulator.pop();
-        accumulator.emplace(op_to_fn.at(Operator::Pow).fn(lhs, rhs));
-        break;
-      default:
-        return 0;
-      }
-    }
-  }
-  return accumulator.top();
 }
