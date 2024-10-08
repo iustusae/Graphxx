@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stack>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -287,16 +288,40 @@ std::vector<TokenType> shunting_yard(const std::string &expression);
  * @return The result of the evaluation as a double.
  */
 
-template <class Output> Output evaluate(const std::string &expression) {
+template <class Output>
+Output evaluate(const std::string &expression,
+                const std::unordered_map<char, double> &var_values = {}) {
 
   static_assert(std::is_arithmetic<Output>::value, "Output must be arithmetic");
 
   auto vec = shunting_yard(expression);
+  if (var_values.empty()) {
+    for (auto &token : vec) {
+      if (isVariable(token)) {
+        std::get<Variable>(token).value = 0;
+      }
+    }
+  } else {
+
+    for (auto &token : vec) {
+      if (isVariable(token)) {
+        if (var_values.find(std::get<Variable>(token).name) ==
+            var_values.end()) {
+          std::get<Variable>(token).value = 0;
+        } else {
+          std::get<Variable>(token).value =
+              var_values.at(std::get<Variable>(token).name);
+        }
+      }
+    }
+  }
   std::stack<double> accumulator{};
 
   for (const auto &tok : vec) {
     if (isNumber(tok)) {
       accumulator.emplace(std::get<double>(tok));
+    } else if (isVariable(tok)) {
+      accumulator.emplace(std::get<Variable>(tok).value);
     } else if (isOperator(tok)) {
       auto op = std::get<Operator>(tok);
 
@@ -351,6 +376,9 @@ template <class Output> Output evaluate(const std::string &expression) {
       }
     }
   }
-  return static_cast<Output>(accumulator.top());
+
+  return (std::is_integral<Output>::value)
+             ? static_cast<Output>(std::ceil(accumulator.top()))
+             : static_cast<Output>(accumulator.top());
 }
 } // namespace Tokenizer

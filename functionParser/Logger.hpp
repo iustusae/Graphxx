@@ -14,7 +14,12 @@ enum class LogLevel {
   kMax,
 };
 
-void log(const std::string &str, Logger::LogLevel level = LogLevel::kAll) {
+inline void log(const std::string &str,
+                Logger::LogLevel level = LogLevel::kAll);
+
+#ifdef FNP_DBG
+inline void log(const std::string &str,
+                Logger::LogLevel level = LogLevel::kAll) {
   switch (level) {
   case LogLevel::kInfo:
     std::clog << termcolor::bright_blue << termcolor::italic << str << '\n';
@@ -33,5 +38,8 @@ void log(const std::string &str, Logger::LogLevel level = LogLevel::kAll) {
     break;
   }
 }
+#else
+inline void log(const std::string &str, Logger::LogLevel level) { return; }
+#endif
 
 } // namespace Logger

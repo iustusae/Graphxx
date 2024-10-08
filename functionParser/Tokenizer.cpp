@@ -92,7 +92,6 @@ Tokenizer::getAssociativity(const Tokenizer::Operator &op) {
 
 auto Tokenizer::tokenize(const std::string_view expression)
     -> std::vector<TokenType> {
-  std::cout << expression << '\n';
   decltype(tokenize(expression)) vec{};
   char curr = 0;
   std::ostringstream oss{};
@@ -120,6 +119,8 @@ auto Tokenizer::tokenize(const std::string_view expression)
                     Logger::LogLevel::kInfo);
         vec.emplace_back(static_cast<Operator>(curr));
         oss = {};
+      } else if (std::isalpha(curr)) {
+        vec.emplace_back(Variable{curr, 0.0});
       }
     }
   }
