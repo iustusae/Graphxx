@@ -381,4 +381,7 @@ Output evaluate(const std::string &expression,
              ? static_cast<Output>(std::ceil(accumulator.top()))
              : static_cast<Output>(accumulator.top());
 }
+
+std::vector<std::pair<double, double>> getAllPoints(int max_y);
+
 } // namespace Tokenizer

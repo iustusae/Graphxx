@@ -1,7 +1,9 @@
 #include "Tokenizer.hpp"
 #include "Logger.hpp"
+#include <SFML/Graphics/VertexArray.hpp>
 #include <regex>
 #include <type_traits>
+#include <unordered_map>
 
 bool Tokenizer::isOperator(const Tokenizer::Operator c) {
   using namespace Tokenizer;
@@ -139,6 +141,58 @@ auto Tokenizer::tokenize(const std::string_view expression)
   }
 
   return vec;
+}
+class MissingMatchingParenException : public std::exception {
+private:
+  int m_idx{};
+  std::string_view m_expr{};
+  std::string m_what{};
+
+  auto getCaretToMatchErrorPosition(int idx, bool to_match) -> std::string {
+    std::ostringstream s{};
+    for (int ctr = 0; ctr < idx; ++ctr) {
+      s << " ";
+    }
+
+    if (to_match) {
+      s << termcolor::red << termcolor::bold << "^ To match this parenthesis";
+    } else {
+      s << termcolor::red << termcolor::bold
+        << "^ Does not have a closing parenthesis";
+    }
+    return s.str();
+  }
+
+public:
+  MissingMatchingParenException(int idx, const std::string_view expr,
+                                bool to_match)
+      : m_idx(idx), m_expr(expr),
+        m_what(fmt::format(
+            "Invalid Expression. Missing Parenthesis {}\n {}\n{}", m_idx,
+            m_expr, getCaretToMatchErrorPosition(m_idx, to_match))) {}
+
+  virtual const char *what() const noexcept override { return m_what.c_str(); }
+};
+
+auto checkIfParensAreAllMatched(const std::string_view expr)
+    -> std::string_view {
+  std::stack<std::pair<char, int>> stack{};
+  int index = 0;
+  for (const auto &c : expr) {
+    if (c == '(') {
+      stack.push(std::make_pair(c, index));
+    } else if (c == ')') {
+      if (stack.empty())
+        throw MissingMatchingParenException(index, expr, true);
+      stack.pop();
+    }
+    ++index;
+  }
+
+  if (!stack.empty())
+    throw MissingMatchingParenException(stack.top().second, expr, false);
+
+  return expr;
 }
 
 std::vector<Tokenizer::TokenType>

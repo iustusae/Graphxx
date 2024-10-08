@@ -20,9 +20,12 @@ find_package(
 find_path(TERMCOLOR_INCLUDE_DIRS "termcolor/termcolor.hpp")
 
 # Create shared library for the function parser
-add_library(fnparser SHARED functionParser/FunctionParser.hpp
+add_library(fnparser STATIC 
                             functionParser/Types.hpp functionParser/Logger.hpp functionParser/Tokenizer.hpp functionParser/Tokenizer.cpp
                             )
+                      
+add_library(fnGrapher STATIC Grapher/Graphing.cpp Grapher/Graphing.hpp)
+target_link_libraries(fnGrapher PUBLIC fmt::fmt sfml-system sfml-window sfml-graphics fnparser)
 
 # Specify properties for the fnparser target
 set_target_properties(fnparser PROPERTIES LINKER_LANGUAGE CXX)
@@ -40,5 +43,5 @@ add_executable(fncxx src/main.cc
         src/main.cc)
 
 # Link libraries to the fncxx executable
-target_link_libraries(fncxx PRIVATE fmt::fmt sfml-system sfml-window
-                                    sfml-graphics fnparser)
+target_link_libraries(fncxx PUBLIC fmt::fmt sfml-system sfml-window
+                                    sfml-graphics fnparser fnGrapher)
