@@ -21,7 +21,7 @@ find_path(TERMCOLOR_INCLUDE_DIRS "termcolor/termcolor.hpp")
 
 # Create shared library for the function parser
 add_library(fnparser SHARED functionParser/FunctionParser.hpp
-                            functionParser/Types.hpp functionParser/Logger.hpp
+                            functionParser/Types.hpp functionParser/Logger.hpp functionParser/Tokenizer.hpp functionParser/Tokenizer.cpp
                             )
 
 # Specify properties for the fnparser target
@@ -33,7 +33,7 @@ target_include_directories(fnparser
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/functionParser)
 
 target_link_directories(fnparser PRIVATE ${TERMCOLOR_INCLUDE_DIRS})
-
+target_link_libraries(fnparser PRIVATE fmt::fmt)
 # Create the main executable
 add_executable(fncxx src/main.cc
         src/main.cc
