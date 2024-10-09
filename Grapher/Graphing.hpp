@@ -7,8 +7,7 @@ public:
   void draw(const std::string &expression);
 
 private:
-  sf::VertexArray getAllPoints(int max_y, const std::string &expression,
-                               float zoom);
+  sf::VertexArray getAllPoints(int max_y, const std::string &expression);
   sf::Text createText(const sf::Font &font, const std::string &content, float x,
                       float y);
 };
