@@ -119,7 +119,6 @@ auto Tokenizer::getFuncForOperator(const Tokenizer::Operator tok)
   }
 }
 int Tokenizer::getOperatorPrecedence(const Operator &op) {
-  std::cout << "op -> " << static_cast<char>(op) << '\n';
   if (op == Operator::LParen || op == Operator::RParen ||
       operator_info.find(op) == operator_info.end()) {
     return -1;
