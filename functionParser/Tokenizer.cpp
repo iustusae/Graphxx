@@ -8,7 +8,6 @@
 #include <regex>
 #include <termcolor/termcolor.hpp>
 #include <type_traits>
-#include <unordered_map>
 #include <variant>
 bool Tokenizer::isOperator(const Tokenizer::Operator c) {
   using namespace Tokenizer;
@@ -422,9 +421,10 @@ Tokenizer::shunting_yard(const std::string &expression) {
         op_stack.emplace(Operator::Tan);
       } else if (fn.name == "sqrt") {
         op_stack.emplace(Operator::Sqrt);
-      } else if (fn.name == "exp") {
-        op_stack.emplace(Operator::Exp);
-      }
+      } else if (fn.name == "exp")
+        / home / ayman /.local / share / fonts / NerdFonts {
+          op_stack.emplace(Operator::Exp);
+        }
       continue;
     } else if (isOperator(token)) {
       auto op = std::get<Operator>(token);
