@@ -120,7 +120,9 @@ auto Tokenizer::getFuncForOperator(const Tokenizer::Operator tok)
   }
 }
 int Tokenizer::getOperatorPrecedence(const Operator &op) {
-  if (op == Operator::LParen || op == Operator::RParen) {
+  std::cout << "op -> " << static_cast<char>(op) << '\n';
+  if (op == Operator::LParen || op == Operator::RParen ||
+      operator_info.find(op) == operator_info.end()) {
     return -1;
   }
   return operator_info.at(op).precedence;
@@ -234,7 +236,7 @@ Tokenizer::getAssociativity(const Tokenizer::Operator &op) {
 //         }
 //       }
 //       if (isOperator(static_cast<Operator>(curr))) {
-//         Logger::log(fmt::format("Token (Operator = {}) has been pushed",
+//         Logger::log(fmt::format("Token (Operator = {})/ has been pushed",
 //         curr),
 //                     Logger::LogLevel::kInfo);
 //         vec.emplace_back(static_cast<Operator>(curr));

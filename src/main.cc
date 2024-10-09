@@ -15,5 +15,6 @@ int main(int argc, char **argv) {
 
   // Tokenizer::tokenize(argv[1]);
 
-  Grapher::draw(argv[1]);
+  auto grapher = Grapher();
+  grapher.draw(argv[1]);
 }
