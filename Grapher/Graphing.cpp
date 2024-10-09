@@ -10,20 +10,55 @@
 #include <iostream>
 #include <unordered_map>
 
-sf::VertexArray getAllPoints(int max_y, const std::string &expression) {
+// sf::VertexArray getAllPoints(int max_y, const std::string &expression) {
 
-  sf::VertexArray points{};
-  std::unordered_map<char, double> var_values{{'x', 0.0}};
+//   sf::VertexArray points{};
+//   std::unordered_map<char, double> var_values{{'x', -max_y}};
+
+//   while (var_values.at('x') < max_y) {
+//     double y = Tokenizer::evaluate<double>(expression, var_values);
+//     points.append(sf::Vertex(sf::Vector2f(var_values.at('x') + 400, 300 - y),
+//                              sf::Color::Blue));
+//     std::cout << "Point " << var_values.at('x') << ": (" << y << ")\n";
+//     var_values.at('x') += 0.1;
+//   }
+
+//   return points;
+// }
+sf::VertexArray getAllPoints(int max_y, const std::string &expression) {
+  sf::VertexArray points{sf::PrimitiveType::Points}; // For individual points
+  sf::VertexArray lines{
+      sf::PrimitiveType::LinesStrip}; // For lines between points
+  std::unordered_map<char, double> var_values{{'x', -max_y}};
+
+  double previous_x = 0.0;
+  double previous_y = 0.0;
 
   while (var_values.at('x') < max_y) {
     double y = Tokenizer::evaluate<double>(expression, var_values);
+
+    // Centering the coordinates
+    float screen_x = var_values.at('x') + 400;
+    float screen_y = 300 - y;
+
     points.append(
-        sf::Vertex(sf::Vector2f(var_values.at('x'), y), sf::Color::Blue));
+        sf::Vertex(sf::Vector2f(screen_x, screen_y), sf::Color::Blue));
+    lines.append(sf::Vertex(sf::Vector2f(screen_x, screen_y), sf::Color::Blue));
+
+    // Add a line between the current point and the previous point
+    if (var_values.at('x') > 0) { // Skip first point for line
+      lines.append(sf::Vertex(sf::Vector2f(previous_x + 400, 300 - previous_y),
+                              sf::Color::Blue));
+    }
+
     std::cout << "Point " << var_values.at('x') << ": (" << y << ")\n";
-    var_values.at('x') += 1.0;
+    previous_x = var_values.at('x');
+    previous_y = y;
+
+    var_values.at('x') += 0.1;
   }
 
-  return points;
+  return lines; // Return only the lines for drawing
 }
 void Grapher::draw(const std::string &expression) {
   // Draw the graph here

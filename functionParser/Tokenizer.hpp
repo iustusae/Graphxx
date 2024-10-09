@@ -42,7 +42,12 @@ enum class Operator : char {
   LParen = '(', ///< Left parenthesis
   RParen = ')', ///< Right parenthesis
   Comma = ',',  ///< Comma (for separating function arguments)
-  None = '\0'   ///< No operator
+  Sine = 's',   ///< Sine function
+  Cosine = 'c', ///< Cosine function
+  Tan = 't',    ///< Tangent function
+  Exp = 'e',    ///< Exponential function
+  Sqrt = 'r',
+  None = '\0' ///< No operator
 };
 
 /**
@@ -188,6 +193,16 @@ const inline std::unordered_map<Operator, OperatorInfo> operator_info = {
     {Operator::Sum, {2, Associativity::Left}},
 };
 
+const inline std::unordered_map<std::string_view, UnaryFunction> un_fns{
+    {"sin", UnaryFunction{"sin", [](double a) { return std::sin(a); }}},
+    {"cos", UnaryFunction{"cos", [](double a) { return std::cos(a); }}},
+    {"tan", UnaryFunction{"tan", [](double a) { return std::tan(a); }}},
+    {"sqrt", UnaryFunction{"sqrt", [](double a) { return std::sqrt(a); }}},
+    {"log", UnaryFunction{"log", [](double a) { return std::log(a); }}},
+    {"exp", UnaryFunction{"exp", [](double a) { return std::exp(a); }}},
+
+};
+
 /**
  * @brief Prints a token to the console.
  * @param token The token to print.
@@ -242,6 +257,8 @@ bool isVariable(const TokenType &tok);
  */
 bool isAParen(const Operator op);
 
+bool isFuncOperator(const Tokenizer::TokenType tok);
+auto getFuncForOperator(const Tokenizer::Operator tok) -> UnaryFunction;
 /**
  * @brief Gets the precedence of an operator.
  * @param op The operator whose precedence is to be determined.
@@ -322,6 +339,12 @@ Output evaluate(const std::string &expression,
       accumulator.emplace(std::get<double>(tok));
     } else if (isVariable(tok)) {
       accumulator.emplace(std::get<Variable>(tok).value);
+    } else if (isFuncOperator(tok)) {
+      auto op = std::get<Operator>(tok);
+      double argument = accumulator.top();
+      accumulator.pop();
+      auto fn = getFuncForOperator(op);
+      accumulator.emplace(fn.fn(argument));
     } else if (isOperator(tok)) {
       auto op = std::get<Operator>(tok);
 
@@ -352,7 +375,6 @@ Output evaluate(const std::string &expression,
         accumulator.pop();
         Logger::log(
             fmt::format("Performing operation {} on {} and {}", '/', lhs, rhs));
-        assert(rhs != 0);
         accumulator.emplace(rhs / lhs);
         break;
       case Operator::Mult:
@@ -369,11 +391,13 @@ Output evaluate(const std::string &expression,
         accumulator.pop();
         rhs = {accumulator.top()};
         accumulator.pop();
-        accumulator.emplace(op_to_fn.at(Operator::Pow).fn(rhs, lhs));
+        accumulator.emplace(std::pow(rhs, lhs));
         break;
       default:
         return 0;
       }
+
+    } else {
     }
   }
 

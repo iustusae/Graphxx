@@ -13,5 +13,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
+  // Tokenizer::tokenize(argv[1]);
+
   Grapher::draw(argv[1]);
 }

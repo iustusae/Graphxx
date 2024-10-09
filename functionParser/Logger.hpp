@@ -1,8 +1,5 @@
 #pragma once
-#include <cstdint>
-#include <iostream>
 #include <string>
-#include <termcolor/termcolor.hpp>
 namespace Logger {
 
 enum class LogLevel {
@@ -18,6 +15,9 @@ inline void log(const std::string &str,
                 Logger::LogLevel level = LogLevel::kAll);
 
 #ifdef FNP_DBG
+#include <cstdint>
+#include <iostream>
+#include <termcolor/termcolor.hpp>
 inline void log(const std::string &str, Logger::LogLevel level) {
   switch (level) {
   case LogLevel::kInfo:
