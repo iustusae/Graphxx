@@ -24,7 +24,7 @@ add_library(fnparser STATIC
                             functionParser/Types.hpp functionParser/Logger.hpp functionParser/Tokenizer.hpp functionParser/Tokenizer.cpp
                             )
                       
-add_library(fnGrapher STATIC Grapher/Graphing.cpp Grapher/Graphing.hpp)
+add_library(fnGrapher STATIC  Grapher/Graphing.hpp)
 target_link_libraries(fnGrapher PUBLIC fmt::fmt sfml-system sfml-window sfml-graphics fnparser)
 
 # Specify properties for the fnparser target
