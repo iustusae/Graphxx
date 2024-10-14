@@ -95,7 +95,61 @@ public:
   }
 };
 
-void drawAxes(sf::RenderWindow &window, const sf::View &view) {
+class InputBox {
+public:
+  InputBox(const sf::Font &font) : m_font(font) {
+    m_box.setSize(sf::Vector2f(400, 30));
+    m_box.setFillColor(sf::Color::White);
+    m_box.setOutlineColor(sf::Color::Black);
+    m_box.setOutlineThickness(2);
+
+    m_text.setFont(m_font);
+    m_text.setCharacterSize(20);
+    m_text.setFillColor(sf::Color::Black);
+  }
+
+  void setPosition(float x, float y) {
+    m_box.setPosition(x, y);
+    m_text.setPosition(x + 5, y + 5);
+  }
+
+  void handleEvent(const sf::Event &event) {
+    if (event.type == sf::Event::TextEntered) {
+      if (event.text.unicode == 8 && m_input.size() > 0) { // Backspace
+        m_input.pop_back();
+      } else if (event.text.unicode == 13) { // Enter
+        m_inputReady = true;
+      } else if (event.text.unicode < 128) { // Regular character
+        m_input += static_cast<char>(event.text.unicode);
+      }
+      m_text.setString(m_input);
+    }
+  }
+
+  void draw(sf::RenderWindow &window) const {
+    window.draw(m_box);
+    window.draw(m_text);
+  }
+
+  bool isInputReady() const { return m_inputReady; }
+  std::string getInput() {
+    m_inputReady = false;
+    return m_input;
+  }
+  void clear() {
+    m_input.clear();
+    m_text.setString(m_input);
+  }
+
+private:
+  sf::RectangleShape m_box;
+  sf::Text m_text;
+  const sf::Font &m_font;
+  std::string m_input;
+  bool m_inputReady = false;
+};
+
+inline void drawAxes(sf::RenderWindow &window, const sf::View &view) {
   sf::VertexArray axes(sf::Lines, 4);
   sf::Vector2f viewSize = view.getSize();
   sf::Vector2f viewCenter = view.getCenter();
@@ -116,24 +170,21 @@ void drawAxes(sf::RenderWindow &window, const sf::View &view) {
 }
 
 inline int draw(int argc, char *argv[]) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " <expression>" << std::endl;
-    return 1;
-  }
-
-  sf::RenderWindow window(sf::VideoMode(1200, 900),
-                          "Graph Viewer with Coordinates");
+  sf::RenderWindow window(sf::VideoMode(1200, 900), "Dynamic Graph Viewer");
   window.setFramerateLimit(60);
 
-  Graph graph(argv[1]);
   sf::Font font;
   if (!font.loadFromFile("../fonts/UbuntuMono-RI.ttf")) {
     std::cerr << "Error loading font" << std::endl;
     return 1;
   }
-  CoordinateBox coordBox(font);
 
-  // Increased initial view size for a bigger graph
+  std::string initialExpression = (argc > 1) ? argv[1] : "x";
+  Graph graph(initialExpression);
+  CoordinateBox coordBox(font);
+  InputBox inputBox(font);
+  inputBox.setPosition(10, window.getSize().y - 40);
+
   sf::View graphView(sf::FloatRect(-15.f, -11.25f, 30.f, 22.5f));
   sf::View uiView(sf::FloatRect(0, 0, 1200, 900));
 
@@ -170,6 +221,15 @@ inline int draw(int argc, char *argv[]) {
           graphView.zoom(zoomFactor);
         }
       }
+
+      inputBox.handleEvent(event);
+    }
+
+    if (inputBox.isInputReady()) {
+      std::string newExpression = inputBox.getInput();
+      graph =
+          Graph(newExpression); // Create a new graph with the new expression
+      inputBox.clear();
     }
 
     graph.calculatePoints(graphView);
@@ -182,9 +242,10 @@ inline int draw(int argc, char *argv[]) {
     drawAxes(window, graphView);
     graph.draw(window);
 
-    // Draw UI elements (coordinate box)
+    // Draw UI elements (coordinate box and input box)
     window.setView(uiView);
     coordBox.draw(window);
+    inputBox.draw(window);
 
     window.display();
   }
