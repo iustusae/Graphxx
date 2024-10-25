@@ -2,12 +2,15 @@
 #include "Tokenizer.hpp"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/RenderStates.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Event.hpp>
 #include <cmath>
+#include <fmt/base.h>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -15,13 +18,109 @@
 #include <string>
 #include <unordered_map>
 
-#include "Tokenizer.hpp" // Include your tokenizer header
-#include <SFML/Graphics.hpp>
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <vector>
+inline static float getNiceStep(float range) {
+  float rough = range / 10.0f;
+  float scale = std::pow(10.0f, std::floor(std::log10(rough)));
+  float normalized = rough / scale;
+
+  if (normalized < 1.5f)
+    return scale;
+  if (normalized < 3.0f)
+    return scale * 2.0f;
+  if (normalized < 7.0f)
+    return scale * 5.0f;
+  return scale * 10.0f;
+}
+
+static inline std::string formatNumber(float value) {
+  if (std::abs(value) < 1e-10)
+    return "0";
+  if (std::abs(value) >= 10000 || std::abs(value) < 0.01) {
+    return fmt::format("{:.1e}", value);
+  }
+  return fmt::format("{:.2g}", value);
+}
+
+class AxisSystem {
+private:
+  sf::VertexArray m_gridLines;
+  sf::VertexArray m_axisTicks;
+  sf::Font &m_font;
+
+public:
+  AxisSystem(sf::Font &font)
+      : m_font(font), m_gridLines(sf::Lines), m_axisTicks(sf::Lines) {}
+
+  void update(const sf::View &view, const sf::Vector2u &windowSize) {
+    m_gridLines.clear();
+    m_axisTicks.clear();
+
+    // Calculate view bounds
+    sf::Vector2f viewCenter = view.getCenter();
+    sf::Vector2f viewSize = view.getSize();
+    float xMin = viewCenter.x - viewSize.x / 2;
+    float xMax = viewCenter.x + viewSize.x / 2;
+    float yMin = viewCenter.y - viewSize.y / 2;
+    float yMax = viewCenter.y + viewSize.y / 2;
+
+    // Calculate steps for grid and labels
+    float xStep = getNiceStep(xMax - xMin);
+    float yStep = getNiceStep(yMax - yMin);
+
+    // Calculate starting positions
+    float xStart = std::floor(xMin / xStep) * xStep;
+    float yStart = std::floor(yMin / yStep) * yStep;
+
+    // Calculate pixel-to-unit ratios
+    float unitsPerPixelY = viewSize.y / windowSize.y;
+    float baseTextSize = 14.0f;                     // Base size in pixels
+    float textSize = baseTextSize / unitsPerPixelY; // Scale text size with zoom
+
+    // Tick size in view units
+    float tickSize = 0.2f * unitsPerPixelY;
+
+    // Create grid lines and labels
+    for (float x = xStart; x <= xMax; x += xStep) {
+      // Vertical grid line
+      m_gridLines.append(
+          sf::Vertex(sf::Vector2f(x, yMin), sf::Color(200, 200, 200, 100)));
+      m_gridLines.append(
+          sf::Vertex(sf::Vector2f(x, yMax), sf::Color(200, 200, 200, 100)));
+
+      // Tick mark on x-axis
+      m_axisTicks.append(
+          sf::Vertex(sf::Vector2f(x, -tickSize), sf::Color::Black));
+      m_axisTicks.append(
+          sf::Vertex(sf::Vector2f(x, tickSize), sf::Color::Black));
+
+      for (float y = yStart; y <= yMax; y += yStep) {
+        // Horizontal grid line
+        m_gridLines.append(
+            sf::Vertex(sf::Vector2f(xMin, y), sf::Color(200, 200, 200, 100)));
+        m_gridLines.append(
+            sf::Vertex(sf::Vector2f(xMax, y), sf::Color(200, 200, 200, 100)));
+
+        // Tick mark on y-axis
+        m_axisTicks.append(
+            sf::Vertex(sf::Vector2f(-tickSize, y), sf::Color::Black));
+        m_axisTicks.append(
+            sf::Vertex(sf::Vector2f(tickSize, y), sf::Color::Black));
+      }
+
+      // Main axes (drawn last to be on top)
+      m_gridLines.append(sf::Vertex(sf::Vector2f(xMin, 0), sf::Color::Black));
+      m_gridLines.append(sf::Vertex(sf::Vector2f(xMax, 0), sf::Color::Black));
+      m_gridLines.append(sf::Vertex(sf::Vector2f(0, yMin), sf::Color::Black));
+      m_gridLines.append(sf::Vertex(sf::Vector2f(0, yMax), sf::Color::Black));
+    }
+  }
+  void draw(sf::RenderTarget &target,
+            sf::RenderStates states = sf::RenderStates::Default) {
+    // Draw grid and axes
+    target.draw(m_gridLines, states);
+    target.draw(m_axisTicks, states);
+  }
+};
 
 class Graph {
 private:
@@ -170,7 +269,7 @@ inline void drawAxes(sf::RenderWindow &window, const sf::View &view) {
 }
 
 inline int draw(int argc, char *argv[]) {
-  sf::RenderWindow window(sf::VideoMode(1200, 900), "Dynamic Graph Viewer");
+  sf::RenderWindow window(sf::VideoMode(1200, 900), "Graph Viewer");
   window.setFramerateLimit(60);
 
   sf::Font font;
@@ -183,7 +282,9 @@ inline int draw(int argc, char *argv[]) {
   Graph graph(initialExpression);
   CoordinateBox coordBox(font);
   InputBox inputBox(font);
-  inputBox.setPosition(10, window.getSize().y - 40);
+  inputBox.setPosition(10, window.getSize().y - 60);
+
+  AxisSystem axisSystem(font);
 
   sf::View graphView(sf::FloatRect(-15.f, -11.25f, 30.f, 22.5f));
   sf::View uiView(sf::FloatRect(0, 0, 1200, 900));
@@ -226,23 +327,22 @@ inline int draw(int argc, char *argv[]) {
     }
 
     if (inputBox.isInputReady()) {
-      std::string newExpression = inputBox.getInput();
-      graph =
-          Graph(newExpression); // Create a new graph with the new expression
+      graph = Graph(inputBox.getInput());
       inputBox.clear();
     }
 
     graph.calculatePoints(graphView);
     coordBox.update(window, graphView);
+    axisSystem.update(graphView, window.getSize());
 
     window.clear(sf::Color::White);
 
     // Draw graph and axes
     window.setView(graphView);
-    drawAxes(window, graphView);
+    axisSystem.draw(window);
     graph.draw(window);
 
-    // Draw UI elements (coordinate box and input box)
+    // Draw UI elements
     window.setView(uiView);
     coordBox.draw(window);
     inputBox.draw(window);
