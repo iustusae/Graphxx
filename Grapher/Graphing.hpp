@@ -1,5 +1,5 @@
 #pragma once
-#include "Tokenizer.hpp"
+#include "../functionParser/Tokenizer.hpp"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderStates.hpp>
@@ -13,7 +13,6 @@
 #include <fmt/base.h>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <string>
 #include <unordered_map>
