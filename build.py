@@ -2,12 +2,12 @@ import argparse
 import subprocess
 import os
 
-def get_compiler_path(compiler):
-    """Get the full path of the specified compiler using 'which'."""
+def get_command_path(command):
+    """Get the full path of the specified command using 'which'."""
     try:
-        return subprocess.check_output(['which', compiler], text=True).strip()
+        return subprocess.check_output(['which', command], text=True).strip()
     except subprocess.CalledProcessError:
-        print(f"Error: {compiler} not found.")
+        print(f"Error: {command} not found.")
         exit(1)
 
 def main():
@@ -28,8 +28,9 @@ def main():
         c_compiler = 'clang'
     
     # Get the compiler paths
-    cxx_compiler_path = get_compiler_path(cxx_compiler)
-    c_compiler_path = get_compiler_path(c_compiler)
+    cxx_compiler_path = get_command_path(cxx_compiler)
+    c_compiler_path = get_command_path(c_compiler)
+    make_program_path = get_command_path('ninja')  # Get the path for ninja
 
     vcpkg_root = os.getenv('VCPKG_ROOT')
     if vcpkg_root is None:
@@ -39,7 +40,7 @@ def main():
     cmake_command = [
         'cmake',
         '--preset=vcpkg',
-        '-G', 'Ninja',
+        '-D', f'CMAKE_MAKE_PROGRAM={make_program_path}',
         '-D', f'CMAKE_CXX_COMPILER={cxx_compiler_path}',
         '-D', f'CMAKE_C_COMPILER={c_compiler_path}',
         '-D', f'CMAKE_TOOLCHAIN_FILE={vcpkg_root}/scripts/buildsystems/vcpkg.cmake'
