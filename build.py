@@ -1,4 +1,5 @@
 import argparse
+from os.path import curdir
 import subprocess
 import os
 
@@ -37,6 +38,10 @@ def main():
         print("VCPKG_ROOT is not set, either set it or install vcpkg at: https://vcpkg.io/en/")
         exit(1)
 
+    if(not os.path.exists(f'{os.curdir}/build')):
+        os.makedirs(f'{os.curdir}/build')
+        
+
     cmake_command = [
         'cmake',
         '--preset=vcpkg',
@@ -52,6 +57,16 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"Error during CMake execution: {e}")
         exit(1)
+
+    os.chdir(f"{os.curdir}/build");
+    try: 
+        subprocess.run("ninja", check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error during ninja execution: {e}")
+        exit(1)
+
+
+
 
 if __name__ == "__main__":
     main()
